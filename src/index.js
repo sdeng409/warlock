@@ -8,4 +8,5 @@ export * from './loadout.js';
 export * from './cast-validation.js';
 export * from './boundary.js';
 export * from './network-contract.js';
+export * from './mvp-runtime.js';
 export * from './mvp-core.js';

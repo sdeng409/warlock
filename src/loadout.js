@@ -28,6 +28,15 @@ export function equipSkill({ ownedSkills, loadout, slot, skillId }) {
   return { ok: true };
 }
 
+export function unequipSkill({ loadout, slot }) {
+  if (!LOADOUT_SLOT_KEYS.includes(slot)) {
+    return { ok: false, reason: 'INVALID_SLOT' };
+  }
+
+  loadout[slot] = null;
+  return { ok: true };
+}
+
 export function isSkillEquipped(loadout, skillId) {
   return LOADOUT_SLOT_KEYS.some((slot) => loadout[slot] === skillId);
 }

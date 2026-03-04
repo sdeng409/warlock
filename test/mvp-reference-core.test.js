@@ -5,17 +5,24 @@ import {
   ARENA_SHRINK,
   BOUNDARY_DOT,
   CastValidator,
+  HostRelaySession,
+  LoadoutUiModel,
   LOADOUT_SLOT_KEYS,
   MvpMatchCore,
   NETWORK_EVENTS,
   ROUND_STATES,
   SKILL_CATALOG,
   assertVersionLock,
+  createDefaultSlotBindings,
+  createEmptyLoadout,
   createBoundaryState,
   goldPayoutFor,
+  presentRoundTransition,
   radiusAtTime,
+  rebindSlot,
   rankPointsFor,
   stepBoundaryState,
+  validateSlotBindings,
   validateHostShopPurchase,
   validateHostSkillCastRequest,
   validateRoomSettings,
@@ -200,6 +207,40 @@ test('B: cast validation is cooldown-only and combat-only', () => {
   assert.equal(nonCombat.reason, 'CAST_ONLY_ALLOWED_IN_COMBAT');
 });
 
+test('B: input binding map keeps 12 unique slot-key bindings', () => {
+  const defaults = createDefaultSlotBindings();
+  const valid = validateSlotBindings(defaults);
+  assert.equal(valid.ok, true);
+  assert.equal(Object.keys(defaults).length, 12);
+  assert.equal(new Set(Object.values(defaults)).size, 12);
+
+  const duplicateRebind = rebindSlot(defaults, { slot: 'W', key: 'Q' });
+  assert.equal(duplicateRebind.ok, false);
+  assert.equal(duplicateRebind.reason, 'DUPLICATE_KEY_BINDING');
+
+  const invalidSlot = rebindSlot(defaults, { slot: 'P', key: '1' });
+  assert.equal(invalidSlot.ok, false);
+  assert.equal(invalidSlot.reason, 'INVALID_SLOT');
+});
+
+test('B: loadout UI model supports equip and unequip flow', () => {
+  const ownedSkills = new Set(['S01', 'S02']);
+  const loadout = createEmptyLoadout();
+  const ui = new LoadoutUiModel({ ownedSkills, loadout });
+
+  const equipQ = ui.equip('Q', 'S01');
+  assert.equal(equipQ.ok, true);
+  assert.equal(ui.snapshot().Q, 'S01');
+
+  const duplicate = ui.equip('W', 'S01');
+  assert.equal(duplicate.ok, false);
+  assert.equal(duplicate.reason, 'DUPLICATE_SKILL_NOT_ALLOWED');
+
+  const unequipQ = ui.unequip('Q');
+  assert.equal(unequipQ.ok, true);
+  assert.equal(ui.snapshot().Q, null);
+});
+
 test('C: rank points and gold payout follow rank order', () => {
   assert.equal(rankPointsFor(8, 1), 8);
   assert.equal(rankPointsFor(8, 8), 1);
@@ -312,6 +353,65 @@ test('E (minimal): room setting constraints and version lock are fixed', () => {
   assert.equal(lock.expected.ugui, 'editor-core (Unity 6000.0.68f1)');
   assert.equal(BoundaryRulesFixed(), true);
   assert.equal(SKILL_CATALOG.length, 12);
+});
+
+test('E: host+relay room creation and event synchronization are deterministic', () => {
+  const hostRelay = new HostRelaySession({ hostId: 'host-1' });
+  const created = hostRelay.createRoom({ maxPlayers: 4, rounds: 5 });
+  assert.equal(created.ok, true);
+  assert.equal(created.room.id, 'room-0001');
+  assert.equal(created.room.inviteCode, 'WLK0001');
+
+  const joined = hostRelay.joinPlayer('p2');
+  assert.equal(joined.ok, true);
+  const combatEvent = hostRelay.syncEvent('RoundStarted', { round: 1 });
+  assert.equal(combatEvent.ok, true);
+  assert.equal(combatEvent.event.seq > 0, true);
+
+  const feed = hostRelay.readEventsSince(0);
+  assert.equal(feed.length, 3);
+  assert.deepEqual(
+    feed.map((event) => event.type),
+    ['RoomCreated', 'PlayerJoined', 'RoundStarted'],
+  );
+});
+
+test('E: reconnect/disconnect policy is explicit and host-fail-safe', () => {
+  const hostRelay = new HostRelaySession({ hostId: 'host-1' });
+  hostRelay.createRoom({ maxPlayers: 4, rounds: 5 });
+  hostRelay.joinPlayer('p2');
+  hostRelay.syncEvent('RoundStarted', { round: 1 });
+
+  const playerDisconnect = hostRelay.onDisconnect('p2');
+  assert.equal(playerDisconnect.ok, true);
+  assert.equal(playerDisconnect.action, 'MARK_INACTIVE');
+
+  const playerReconnect = hostRelay.onReconnect('p2');
+  assert.equal(playerReconnect.ok, true);
+  assert.equal(playerReconnect.action, 'RESUME_FROM_LAST_SEQUENCE');
+  assert.equal(playerReconnect.resumeFromSeq > 0, true);
+
+  const hostDisconnect = hostRelay.onDisconnect('host-1');
+  assert.equal(hostDisconnect.ok, true);
+  assert.equal(hostDisconnect.action, 'SAFE_TERMINATE');
+});
+
+test('A: round transition presenter exposes deterministic UI contract by phase', () => {
+  const waiting = presentRoundTransition({
+    phase: ROUND_STATES.WAITING,
+    currentRound: 0,
+    roundsTotal: 5,
+  });
+  assert.equal(waiting.title, 'Waiting For Players');
+  assert.equal(waiting.primaryAction, 'HostStartMatchWhenReady');
+
+  const shop = presentRoundTransition({
+    phase: ROUND_STATES.SHOP,
+    currentRound: 2,
+    roundsTotal: 5,
+  });
+  assert.equal(shop.title, 'Shop');
+  assert.equal(shop.roundText, 'Round 2/5');
 });
 
 test('Scope guard: non-FFA mode is rejected (team/dedicated/ranked out of MVP)', () => {
