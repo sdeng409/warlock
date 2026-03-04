@@ -357,14 +357,34 @@ test('E (minimal): room setting constraints and version lock are fixed', () => {
 
 test('E: host+relay room creation and event synchronization are deterministic', () => {
   const hostRelay = new HostRelaySession({ hostId: 'host-1' });
+  const preRoomEvent = hostRelay.syncEvent('RoundStarted', { round: 1 });
+  assert.equal(preRoomEvent.ok, false);
+  assert.equal(preRoomEvent.reason, 'ROOM_NOT_CREATED');
+
   const created = hostRelay.createRoom({ maxPlayers: 4, rounds: 5 });
   assert.equal(created.ok, true);
   assert.equal(created.room.id, 'room-0001');
   assert.equal(created.room.inviteCode, 'WLK0001');
 
-  const joined = hostRelay.joinPlayer('p2');
+  const unauthorizedJoin = hostRelay.joinPlayer('p2', { actorId: 'intruder' });
+  assert.equal(unauthorizedJoin.ok, false);
+  assert.equal(unauthorizedJoin.reason, 'UNAUTHORIZED');
+
+  const missingActorJoin = hostRelay.joinPlayer('p2');
+  assert.equal(missingActorJoin.ok, false);
+  assert.equal(missingActorJoin.reason, 'MISSING_ACTOR_ID');
+
+  const joined = hostRelay.joinPlayer('p2', { actorId: 'host-1' });
   assert.equal(joined.ok, true);
-  const combatEvent = hostRelay.syncEvent('RoundStarted', { round: 1 });
+  const unauthorizedSync = hostRelay.syncEvent('RoundStarted', { round: 1 }, { actorId: 'p2' });
+  assert.equal(unauthorizedSync.ok, false);
+  assert.equal(unauthorizedSync.reason, 'HOST_ONLY_ACTION');
+
+  const missingActorSync = hostRelay.syncEvent('RoundStarted', { round: 1 });
+  assert.equal(missingActorSync.ok, false);
+  assert.equal(missingActorSync.reason, 'MISSING_ACTOR_ID');
+
+  const combatEvent = hostRelay.syncEvent('RoundStarted', { round: 1 }, { actorId: 'host-1' });
   assert.equal(combatEvent.ok, true);
   assert.equal(combatEvent.event.seq > 0, true);
 
@@ -379,19 +399,35 @@ test('E: host+relay room creation and event synchronization are deterministic', 
 test('E: reconnect/disconnect policy is explicit and host-fail-safe', () => {
   const hostRelay = new HostRelaySession({ hostId: 'host-1' });
   hostRelay.createRoom({ maxPlayers: 4, rounds: 5 });
-  hostRelay.joinPlayer('p2');
-  hostRelay.syncEvent('RoundStarted', { round: 1 });
+  hostRelay.joinPlayer('p2', { actorId: 'host-1' });
+  hostRelay.syncEvent('RoundStarted', { round: 1 }, { actorId: 'host-1' });
 
-  const playerDisconnect = hostRelay.onDisconnect('p2');
+  const missingActorDisconnect = hostRelay.onDisconnect('p2');
+  assert.equal(missingActorDisconnect.ok, false);
+  assert.equal(missingActorDisconnect.action, 'MISSING_ACTOR_ID');
+
+  const unauthorizedHostDisconnect = hostRelay.onDisconnect('host-1', { actorId: 'p2' });
+  assert.equal(unauthorizedHostDisconnect.ok, false);
+  assert.equal(unauthorizedHostDisconnect.action, 'HOST_ONLY_ACTION');
+
+  const playerDisconnect = hostRelay.onDisconnect('p2', { actorId: 'p2' });
   assert.equal(playerDisconnect.ok, true);
   assert.equal(playerDisconnect.action, 'MARK_INACTIVE');
 
-  const playerReconnect = hostRelay.onReconnect('p2');
+  const missingActorReconnect = hostRelay.onReconnect('p2');
+  assert.equal(missingActorReconnect.ok, false);
+  assert.equal(missingActorReconnect.action, 'MISSING_ACTOR_ID');
+
+  const lastSeqBeforeReconnect = hostRelay.readEventsSince(0).at(-1).seq;
+  const playerReconnect = hostRelay.onReconnect('p2', { actorId: 'host-1' });
   assert.equal(playerReconnect.ok, true);
   assert.equal(playerReconnect.action, 'RESUME_FROM_LAST_SEQUENCE');
-  assert.equal(playerReconnect.resumeFromSeq > 0, true);
+  assert.equal(playerReconnect.resumeFromSeq, lastSeqBeforeReconnect);
 
-  const hostDisconnect = hostRelay.onDisconnect('host-1');
+  const rejoinEvent = hostRelay.readEventsSince(0).find((event) => event.type === 'PlayerJoined' && event.payload.reconnected === true);
+  assert.equal(rejoinEvent.payload.resumeFromSeq, playerReconnect.resumeFromSeq);
+
+  const hostDisconnect = hostRelay.onDisconnect('host-1', { actorId: 'host-1' });
   assert.equal(hostDisconnect.ok, true);
   assert.equal(hostDisconnect.action, 'SAFE_TERMINATE');
 });

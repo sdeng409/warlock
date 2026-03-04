@@ -2,7 +2,7 @@ import { DEFAULT_ROUNDS, MAX_PLAYERS, MIN_PLAYERS, ROOM_ROUND_OPTIONS } from './
 
 export function normalizeRoomSettings(input = {}) {
   const rounds = input.rounds ?? DEFAULT_ROUNDS;
-  const maxPlayers = input.maxPlayers;
+  const maxPlayers = input.maxPlayers ?? MAX_PLAYERS;
 
   return {
     rounds,

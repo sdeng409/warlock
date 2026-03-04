@@ -78,3 +78,4 @@ Grounded in the same docs order above, now materialized under Unity paths:
 - This repository targets **MVP reference/handoff completeness** (logic + contracts + deterministic tests).
 - It does **not** include full Unity scene wiring, visual UI prefabs, or live Fusion relay hosting in this environment.
 - Excluded scope remains fixed: team mode, random matchmaking, dedicated server.
+- Security contract note: `actorId` must be bound from authenticated transport/session context (never trust raw client payload).

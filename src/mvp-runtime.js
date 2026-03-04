@@ -183,13 +183,21 @@ export class HostRelaySession {
     return { ok: true, room: this.room };
   }
 
-  joinPlayer(playerId) {
+  joinPlayer(playerId, { actorId } = {}) {
     if (!this.room) {
       return { ok: false, reason: 'ROOM_NOT_CREATED' };
     }
 
     if (!playerId) {
       return { ok: false, reason: 'INVALID_PLAYER_ID' };
+    }
+
+    if (!actorId) {
+      return { ok: false, reason: 'MISSING_ACTOR_ID' };
+    }
+
+    if (actorId !== this.hostId && actorId !== playerId) {
+      return { ok: false, reason: 'UNAUTHORIZED' };
     }
 
     if (this.players.has(playerId)) {
@@ -205,7 +213,19 @@ export class HostRelaySession {
     return { ok: true };
   }
 
-  syncEvent(eventType, payload = {}) {
+  syncEvent(eventType, payload = {}, { actorId } = {}) {
+    if (!this.room) {
+      return { ok: false, reason: 'ROOM_NOT_CREATED' };
+    }
+
+    if (!actorId) {
+      return { ok: false, reason: 'MISSING_ACTOR_ID' };
+    }
+
+    if (actorId !== this.hostId) {
+      return { ok: false, reason: 'HOST_ONLY_ACTION' };
+    }
+
     if (!ALL_NETWORK_EVENT_TYPES.has(eventType)) {
       return { ok: false, reason: 'UNKNOWN_EVENT_TYPE' };
     }
@@ -218,7 +238,23 @@ export class HostRelaySession {
     return this.events.filter((event) => event.seq > seq);
   }
 
-  onDisconnect(playerId) {
+  onDisconnect(playerId, { actorId } = {}) {
+    if (!this.room) {
+      return { ok: false, action: 'ROOM_NOT_CREATED' };
+    }
+
+    if (!actorId) {
+      return { ok: false, action: 'MISSING_ACTOR_ID' };
+    }
+
+    if (playerId === this.hostId && actorId !== this.hostId) {
+      return { ok: false, action: 'HOST_ONLY_ACTION' };
+    }
+
+    if (actorId !== this.hostId && actorId !== playerId) {
+      return { ok: false, action: 'UNAUTHORIZED' };
+    }
+
     if (!this.players.has(playerId)) {
       return { ok: false, action: 'REJECT_UNKNOWN_PLAYER' };
     }
@@ -244,7 +280,19 @@ export class HostRelaySession {
     };
   }
 
-  onReconnect(playerId) {
+  onReconnect(playerId, { actorId } = {}) {
+    if (!this.room) {
+      return { ok: false, action: 'ROOM_NOT_CREATED' };
+    }
+
+    if (!actorId) {
+      return { ok: false, action: 'MISSING_ACTOR_ID' };
+    }
+
+    if (actorId !== this.hostId && actorId !== playerId) {
+      return { ok: false, action: 'UNAUTHORIZED' };
+    }
+
     if (!this.players.has(playerId)) {
       return { ok: false, action: 'REJECT_UNKNOWN_PLAYER' };
     }
@@ -253,16 +301,17 @@ export class HostRelaySession {
       return { ok: true, action: 'NO_OP' };
     }
 
+    const resumeFromSeq = this.lastSeq;
     this.disconnectedPlayers.delete(playerId);
     this._pushEvent('PlayerJoined', {
       playerId,
       reconnected: true,
-      resumeFromSeq: this.lastSeq,
+      resumeFromSeq,
     });
     return {
       ok: true,
       action: 'RESUME_FROM_LAST_SEQUENCE',
-      resumeFromSeq: this.lastSeq,
+      resumeFromSeq,
     };
   }
 

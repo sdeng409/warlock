@@ -224,7 +224,7 @@ namespace Warlock.Mvp
             return (true, null);
         }
 
-        public (bool ok, string? reason) JoinPlayer(string playerId)
+        public (bool ok, string? reason) JoinPlayer(string playerId, string? actorId = null)
         {
             if (RoomId == null || Settings == null)
             {
@@ -234,6 +234,17 @@ namespace Warlock.Mvp
             if (string.IsNullOrWhiteSpace(playerId))
             {
                 return (false, "INVALID_PLAYER_ID");
+            }
+
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                return (false, "MISSING_ACTOR_ID");
+            }
+
+            var caller = actorId;
+            if (caller != HostId && caller != playerId)
+            {
+                return (false, "UNAUTHORIZED");
             }
 
             if (_players.Contains(playerId))
@@ -255,8 +266,26 @@ namespace Warlock.Mvp
             return (true, null);
         }
 
-        public (bool ok, string? reason, HostRelayEvent? @event) SyncEvent(string eventType, IReadOnlyDictionary<string, object>? payload = null)
+        public (bool ok, string? reason, HostRelayEvent? @event) SyncEvent(
+            string eventType,
+            IReadOnlyDictionary<string, object>? payload = null,
+            string? actorId = null)
         {
+            if (RoomId == null)
+            {
+                return (false, "ROOM_NOT_CREATED", null);
+            }
+
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                return (false, "MISSING_ACTOR_ID", null);
+            }
+
+            if (actorId != HostId)
+            {
+                return (false, "HOST_ONLY_ACTION", null);
+            }
+
             if (!KnownEvents.Contains(eventType))
             {
                 return (false, "UNKNOWN_EVENT_TYPE", null);
@@ -271,8 +300,29 @@ namespace Warlock.Mvp
             return _events.Where(evt => evt.Seq > seq).ToList();
         }
 
-        public (bool ok, string action) OnDisconnect(string playerId)
+        public (bool ok, string action) OnDisconnect(string playerId, string? actorId = null)
         {
+            if (RoomId == null)
+            {
+                return (false, "ROOM_NOT_CREATED");
+            }
+
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                return (false, "MISSING_ACTOR_ID");
+            }
+
+            var caller = actorId;
+            if (playerId == HostId && caller != HostId)
+            {
+                return (false, "HOST_ONLY_ACTION");
+            }
+
+            if (caller != HostId && caller != playerId)
+            {
+                return (false, "UNAUTHORIZED");
+            }
+
             if (!_players.Contains(playerId))
             {
                 return (false, "REJECT_UNKNOWN_PLAYER");
@@ -296,8 +346,24 @@ namespace Warlock.Mvp
             return (true, "MARK_INACTIVE");
         }
 
-        public (bool ok, string action, int resumeFromSeq) OnReconnect(string playerId)
+        public (bool ok, string action, int resumeFromSeq) OnReconnect(string playerId, string? actorId = null)
         {
+            if (RoomId == null)
+            {
+                return (false, "ROOM_NOT_CREATED", 0);
+            }
+
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                return (false, "MISSING_ACTOR_ID", 0);
+            }
+
+            var caller = actorId;
+            if (caller != HostId && caller != playerId)
+            {
+                return (false, "UNAUTHORIZED", 0);
+            }
+
             if (!_players.Contains(playerId))
             {
                 return (false, "REJECT_UNKNOWN_PLAYER", 0);
@@ -308,14 +374,15 @@ namespace Warlock.Mvp
                 return (true, "NO_OP", _lastSeq);
             }
 
+            var resumeFromSeq = _lastSeq;
             _disconnectedPlayers.Remove(playerId);
             PushEvent("PlayerJoined", new Dictionary<string, object>
             {
                 { "playerId", playerId },
                 { "reconnected", true },
-                { "resumeFromSeq", _lastSeq }
+                { "resumeFromSeq", resumeFromSeq }
             });
-            return (true, "RESUME_FROM_LAST_SEQUENCE", _lastSeq);
+            return (true, "RESUME_FROM_LAST_SEQUENCE", resumeFromSeq);
         }
 
         private HostRelayEvent PushEvent(string type, IReadOnlyDictionary<string, object> payload)
