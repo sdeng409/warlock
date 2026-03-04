@@ -1,0 +1,16 @@
+{
+  "name": "Warlock.Playable",
+  "rootNamespace": "Warlock.Playable",
+  "references": [
+    "Warlock.Mvp"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

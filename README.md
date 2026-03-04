@@ -47,9 +47,37 @@ node --test
 
 Current Node acceptance status: **18/18 passing**.
 
+## Unity playable mode (local vertical slice)
+You can now run a minimal-but-playable Unity loop in Editor.
+
+### Quick start (empty scene bootstrap)
+1. Open project in Unity `6000.0.68f1`.
+2. Create an empty scene.
+3. Add an empty GameObject named `WarlockPlayableBootstrap`.
+4. Attach `Warlock.Playable.WarlockPlayableBootstrap` component.
+5. Press **Play**.
+6. Press **Space** to start.
+
+Optional scene helper:
+- Menu: **Warlock → Playable → Create Empty Playable Scene**
+
+### Controls
+- **Right click**: move local player.
+- **QWERASDFZXCV**: cast equipped skills by loadout slot.
+- **Shop phase**: buy skills from OnGUI panel, press **Enter** to close shop early.
+- **Match end**: press **R** to restart.
+
+### What is playable
+- FFA 2~8 actors (1 local player + simple bots).
+- Loop: `Waiting -> Countdown -> Combat -> RoundEnd -> Shop -> MatchEnd`.
+- Boundary shrink + boundary DoT during combat.
+- Round ranking, points/gold payout, between-round shopping.
+- Skill casting mapped to all 12 slots; multiple skills have visible combat effects (damage/knockback/mobility/control/defense).
+
 ## Unity MVP code (docs/20 mapping)
 Grounded in the same docs order above, now materialized under Unity paths:
 - `Assets/Warlock/Scripts/Mvp/` - room validation, round FSM, economy, tie-breaks, loadout/cast validation, boundary/shrink, network contract + runtime presenter/binding/session models, scope guard, fixed 12-skill catalog
+- `Assets/Warlock/Scripts/Playable/` - engine-referenced local playable bootstrap/runtime (`Warlock.Playable` asmdef)
 - `Assets/Warlock/Tests/EditMode/` - acceptance-mapped EditMode tests including runtime flow/network session coverage (A~F)
 - `ProjectSettings/ProjectVersion.txt` - Unity lock `6000.0.68f1`
 - `Packages/manifest.json` + `Packages/warlock-mvp-lock.json` - MVP package/version lock intent (URP, Input System 1.17.0, Fusion 2.0.11 Stable build 1743)
@@ -74,8 +102,8 @@ Grounded in the same docs order above, now materialized under Unity paths:
 - `SKILL_CATALOG` / loadout validation -> shared gameplay data contract for client UI + host checks
 - `HostRelaySession` -> host-driven room/invite/event ordering + safe disconnect policy contract
 
-## Completion envelope (important)
-- This repository targets **MVP reference/handoff completeness** (logic + contracts + deterministic tests).
-- It does **not** include full Unity scene wiring, visual UI prefabs, or live Fusion relay hosting in this environment.
-- Excluded scope remains fixed: team mode, random matchmaking, dedicated server.
+## Known limitations
+- Playable slice uses lightweight runtime primitives/OnGUI (no production UI/prefab polish yet).
+- Bots are intentionally simple and deterministic enough for local validation.
+- Still out of scope: team mode, random matchmaking, dedicated server.
 - Security contract note: `actorId` must be bound from authenticated transport/session context (never trust raw client payload).
