@@ -1,5 +1,0 @@
-{"timestamp":"2026-03-04T11:42:05.710Z","type":"watcher_start","cwd":"/mnt/c/Users/HAN/Desktop/warlock","notify_script":"/usr/local/lib/node_modules/oh-my-codex/scripts/notify-hook.js","poll_ms":700,"once":false}
-{"timestamp":"2026-03-04T11:42:05.923Z","type":"watcher_start","cwd":"/mnt/c/Users/HAN/Desktop/warlock","notify_script":"/usr/local/lib/node_modules/oh-my-codex/scripts/notify-hook.js","poll_ms":700,"once":true}
-{"timestamp":"2026-03-04T11:42:05.933Z","type":"watcher_once_complete","seen_turns":0}
-{"timestamp":"2026-03-04T11:42:05.942Z","type":"watcher_stop","signal":"SIGTERM"}
-{"timestamp":"2026-03-04T11:42:52.509Z","type":"watcher_start","cwd":"/mnt/c/Users/HAN/Desktop/warlock","notify_script":"/usr/local/lib/node_modules/oh-my-codex/scripts/notify-hook.js","poll_ms":700,"once":false}
