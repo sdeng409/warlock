@@ -1,1 +1,38 @@
+# OMX runtime state
 .omx/
+
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+
+# IDE / editor caches
+.vs/
+.vscode/
+.idea/
+
+# Unity/Mono project files (auto-generated)
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+sysinfo.txt
+
+# OS junk
+.DS_Store
+Thumbs.db
