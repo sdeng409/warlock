@@ -28,5 +28,10 @@
   "mvpUpgradePolicy": {
     "unity": "6000.0.x patches only",
     "fusion": "2.0.x patches only"
+  },
+  "unityProjectArtifacts": {
+    "projectVersionFile": "ProjectSettings/ProjectVersion.txt",
+    "manifestFile": "Packages/manifest.json",
+    "unityLockMirror": "Packages/warlock-mvp-lock.json"
   }
 }

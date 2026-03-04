@@ -1,7 +1,9 @@
-# warlock MVP headless reference core
+# warlock MVP reference core (Node + Unity)
 
 Docs-first MVP reference implementation for Windows Unity/Fusion handoff.
-This is a **headless Node.js ESM core** that encodes gameplay/network contracts from docs so Unity 6000.0.68f1 + Fusion 2.0.11 implementation can follow the same rules.
+This repo now contains:
+- **Headless Node.js ESM reference core** (`src/`, `test/`)
+- **Unity-oriented MVP core code + EditMode tests** (`Assets/Warlock/`, `Packages/`, `ProjectSettings/`)
 
 ## Docs baseline (from `docs/20`)
 Implementation was aligned in this order:
@@ -37,6 +39,13 @@ Excluded:
 ```bash
 node --test
 ```
+
+## Unity MVP code (docs/20 mapping)
+Grounded in the same docs order above, now materialized under Unity paths:
+- `Assets/Warlock/Scripts/Mvp/` - room validation, round FSM, economy, tie-breaks, loadout/cast validation, boundary/shrink, network contract stubs, scope guard, fixed 12-skill catalog
+- `Assets/Warlock/Tests/EditMode/` - acceptance-mapped EditMode tests for A-D + E minimal from `docs/24`
+- `ProjectSettings/ProjectVersion.txt` - Unity lock `6000.0.68f1`
+- `Packages/manifest.json` + `Packages/warlock-mvp-lock.json` - MVP package/version lock intent (URP, Input System 1.17.0, Fusion 2.0.11 Stable build 1743)
 
 ## Structure
 - `src/mvp-core.js` - minimal match core orchestration
