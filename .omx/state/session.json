@@ -1,0 +1,9 @@
+{
+  "session_id": "omx-1772624572026-5v6lj4",
+  "started_at": "2026-03-04T11:42:52.454Z",
+  "cwd": "/mnt/c/Users/HAN/Desktop/warlock",
+  "pid": 8105,
+  "platform": "linux",
+  "pid_start_ticks": 35179,
+  "pid_cmdline": "node /usr/local/bin/omx --xhigh --madmax"
+}

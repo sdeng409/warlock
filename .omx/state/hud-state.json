@@ -1,0 +1,5 @@
+{
+  "last_turn_at": "2026-03-04T11:43:08.536Z",
+  "turn_count": 1,
+  "last_agent_output": "진행 완료했습니다. WSL 내부에서 요청하신 실행까지 걸어뒀습니다.\n\n현재 상태:\n- WSL Ubuntu에 `node v20.20.0`, `npm v10.8.2`, `tmux` 설"
+}

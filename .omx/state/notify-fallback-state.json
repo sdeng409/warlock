@@ -1,0 +1,9 @@
+{
+  "pid": 8120,
+  "started_at": "2026-03-04T11:42:52.505Z",
+  "cwd": "/mnt/c/Users/HAN/Desktop/warlock",
+  "notify_script": "/usr/local/lib/node_modules/oh-my-codex/scripts/notify-hook.js",
+  "poll_ms": 700,
+  "tracked_files": 1,
+  "seen_turns": 0
+}
